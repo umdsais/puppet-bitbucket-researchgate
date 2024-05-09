@@ -37,6 +37,12 @@ JVM_SUPPORT_RECOMMENDED_ARGS="<%= scope.lookupvar('bitbucket::jvm_support_recomm
 JVM_MINIMUM_MEMORY="<%= scope.lookupvar('bitbucket::jvm_xms') %>"
 JVM_MAXIMUM_MEMORY="<%= scope.lookupvar('bitbucket::jvm_xmx') %>"
 
+# This setting controls the time (in ms) after which idle JNDI connections are removed from the connection pool
+# See https://docs.oracle.com/javase/jndi/tutorial/ldap/connect/config.html
+if [ -z "${JNDI_CONNECTION_POOL_TIMEOUT}" ]; then
+    JNDI_CONNECTION_POOL_TIMEOUT=300000
+fi
+
 # Uncommenting the following will set the umask for the webapp. It can be used to override the default
 # settings for the service user if they are not sufficiently secure.
 #
@@ -74,13 +80,19 @@ if echo $UMASK | grep -qv '0[2367]7$'; then
     fi
 fi
 
-MAX_OPEN_FILES=4096
+MAX_OPEN_FILES=6192
 if [ $(ulimit -n) -lt ${MAX_OPEN_FILES} ]; then
     echo -e "\nThe current open files limit is set to less than $MAX_OPEN_FILES\nAttempting to increase limit..."
     if ulimit -n $MAX_OPEN_FILES; then
         echo -e "\tLimit increased to $MAX_OPEN_FILES open files"
     else
-        echo -e "Warning: Open file limit could not be increased. You may experience problems under heavy load"
+        echo -e "\n Couldn't increase file limit to $MAX_OPEN_FILES\nTrying a lower number..."
+        MAX_OPEN_FILES=4096
+        if ulimit -n $MAX_OPEN_FILES; then
+          echo -e "\tLimit increased to $MAX_OPEN_FILES open files"
+        else
+          echo -e "Warning: Open file limit could not be increased. You may experience problems under heavy load"
+        fi
     fi
 fi
 
@@ -107,12 +119,13 @@ fi
 JVM_LIBRARY_PATH="$INST_DIR/lib/native;$BITBUCKET_HOME/lib/native"
 
 BITBUCKET_ARGS="-Datlassian.standalone=BITBUCKET -Dbitbucket.home=$BITBUCKET_HOME -Dbitbucket.install=$INST_DIR"
+JNDI_ARGS="-Dcom.sun.jndi.ldap.connect.pool.timeout=$JNDI_CONNECTION_POOL_TIMEOUT"
 JVM_FILE_ENCODING_ARGS="-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
-JVM_JAVA_ARGS="-Djava.io.tmpdir=$BITBUCKET_HOME/tmp -Djava.library.path=$JVM_LIBRARY_PATH"
+JVM_JAVA_ARGS="-Djava.io.tmpdir=$BITBUCKET_HOME/tmp -Djava.library.path=$JVM_LIBRARY_PATH -XX:+IgnoreUnrecognizedVMOptions --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.naming/com.sun.jndi.ldap=ALL-UNNAMED"
 JVM_MEMORY_ARGS="-Xms$JVM_MINIMUM_MEMORY -Xmx$JVM_MAXIMUM_MEMORY -XX:+UseG1GC"
 JVM_REQUIRED_ARGS="$JVM_MEMORY_ARGS $JVM_FILE_ENCODING_ARGS $JVM_JAVA_ARGS"
 
-JAVA_OPTS="-classpath $INST_DIR/app $JAVA_OPTS $BITBUCKET_ARGS $JMX_OPTS $JVM_REQUIRED_ARGS $JVM_SUPPORT_RECOMMENDED_ARGS"
+JAVA_OPTS="-classpath $INST_DIR/app $JAVA_OPTS $BITBUCKET_ARGS $JNDI_ARGS $JMX_OPTS $JVM_REQUIRED_ARGS $JVM_SUPPORT_RECOMMENDED_ARGS"
 LAUNCHER="com.atlassian.bitbucket.internal.launcher.BitbucketServerLauncher"
 
 echo -e "\nStarting Bitbucket webapp at http://localhost:<%= scope.lookupvar('bitbucket::tomcat_port') %>"
@@ -125,7 +138,7 @@ else
     if [ $? -eq 0 ]; then
         echo -e "The Bitbucket webapp has been started.\n"
         echo "If you cannot access Bitbucket within 3 minutes, or encounter other issues, check the troubleshooting guide at:"
-        echo "http://go.atlassian.com/bbs-troubleshooting-installations"
+        echo "https://go.atlassian.com/bbs-troubleshooting-installations"
     else
         if [ -f "$BITBUCKET_HOME/log/bitbucket.pid" ]; then
             # If the application failed to start, remove the PID file
