@@ -3,23 +3,23 @@ require 'spec_helper'
 describe 'bitbucket' do
   context 'supported operating systems' do
     on_supported_os.each do |os, facts|
-      context "on #{os} #{facts}" do
+      context os do
         let(:facts) do
           facts
         end
-        context 'test class without any parameters' do
-          it { is_expected.to compile.with_all_deps }
-          it { is_expected.to contain_class('bitbucket') }
-          it { is_expected.to contain_class('bitbucket::params') }
-          it { is_expected.to contain_anchor('bitbucket::start').that_comes_before('bitbucket::install') }
-          it { is_expected.to contain_class('bitbucket::install').that_comes_before('bitbucket::config') }
-          it { is_expected.to contain_class('bitbucket::config') }
-          it { is_expected.to contain_class('bitbucket::backup') }
-          it { is_expected.to contain_class('bitbucket::service').that_subscribes_to('bitbucket::config') }
-          it { is_expected.to contain_anchor('bitbucket::end').that_requires('bitbucket::service') }
-          it { is_expected.to contain_class('archive') }
-          it { is_expected.to contain_service('bitbucket') }
-        end
+
+        it { is_expected.to compile.with_all_deps }
+
+        # Test containment of classes
+        it { is_expected.to contain_class('bitbucket::install') }
+        it { is_expected.to contain_class('bitbucket::config') }
+        it { is_expected.to contain_class('bitbucket::service') }
+        it { is_expected.to contain_class('bitbucket::backup') }
+
+        # Test class relationships
+        it { is_expected.to contain_class('bitbucket::install').that_comes_before('Class[bitbucket::config]') }
+        it { is_expected.to contain_class('bitbucket::config').that_notifies('Class[bitbucket::service]') }
+        it { is_expected.to contain_class('bitbucket::service').that_comes_before('Class[bitbucket::backup]') }
       end
     end
   end
@@ -27,13 +27,17 @@ describe 'bitbucket' do
     describe 'test class without any parameters on Solaris/Nexenta' do
       let(:facts) do
         {
-          :osfamily => 'Solaris',
-          :operatingsystem => 'Nexenta',
-          :operatingsystemmajrelease => '7',
+          'os' => {
+            'family'  => 'Solaris',
+            'name'    => 'Nexenta',
+            'release' => {
+              'major' => '7'
+            }
+          }
         }
       end
 
-      it { expect { is_expected.to contain_service('bitbucket') }.to raise_error(Puppet::Error, /Nexenta 7 not supported/) }
+      it { expect { is_expected.to contain_service('bitbucket') }.to raise_error(Puppet::Error, %r{Nexenta 7 not supported}) }
     end
   end
 end

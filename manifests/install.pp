@@ -1,26 +1,60 @@
 # == Class: bitbucket::install
 #
-# This installs the bitbucket module. See README.md for details
+# This installs the bitbucket module
 #
-class bitbucket::install(
-  $version        = $bitbucket::version,
-  $product        = $bitbucket::product,
-  $format         = $bitbucket::format,
-  $installdir     = $bitbucket::installdir,
-  $homedir        = $bitbucket::homedir,
-  $logdir         = $bitbucket::logdir,
-  $manage_usr_grp = $bitbucket::manage_usr_grp,
-  $user           = $bitbucket::user,
-  $group          = $bitbucket::group,
-  $uid            = $bitbucket::uid,
-  $gid            = $bitbucket::gid,
-  $download_url   = $bitbucket::download_url,
-  $deploy_module  = $bitbucket::deploy_module,
-  $dburl          = $bitbucket::dburl,
-  $checksum       = $bitbucket::checksum,
-  $webappdir,
-  ) {
-
+# === Parameters
+#
+# [*version*]
+#   Bitbucket version to install
+# [*product*]
+#   Product name (bitbucket)
+# [*format*]
+#   Installation archive format
+# [*installdir*]
+#   Installation directory path
+# [*homedir*]
+#   Home directory path
+# [*logdir*]
+#   Log directory path
+# [*manage_usr_grp*]
+#   Whether to manage user/group
+# [*user*]
+#   Service user
+# [*group*]
+#   Service group
+# [*uid*]
+#   User ID
+# [*gid*]
+#   Group ID
+# [*download_url*]
+#   Product download URL
+# [*deploy_module*]
+#   Module to use for deployment
+# [*dburl*]
+#   Database URL
+# [*checksum*]
+#   Download file checksum
+# [*webappdir*]
+#   Web application directory
+#
+class bitbucket::install (
+  String $webappdir            = $bitbucket::webappdir,
+  String $version                        = $bitbucket::version,
+  String $product                        = $bitbucket::product,
+  String $format                         = $bitbucket::format,
+  Stdlib::Absolutepath $installdir       = $bitbucket::installdir,
+  Stdlib::Absolutepath $homedir          = $bitbucket::homedir,
+  Stdlib::Absolutepath $logdir           = $bitbucket::logdir,
+  Boolean $manage_usr_grp                = $bitbucket::manage_usr_grp,
+  String $user                           = $bitbucket::user,
+  String $group                          = $bitbucket::group,
+  Optional[Integer] $uid                 = $bitbucket::uid,
+  Optional[Integer] $gid                 = $bitbucket::gid,
+  Optional[String] $download_url         = $bitbucket::download_url,
+  String $deploy_module                  = $bitbucket::deploy_module,
+  String $dburl                          = $bitbucket::dburl,
+  Optional[String] $checksum             = $bitbucket::checksum,
+) {
   if $manage_usr_grp {
     #Manage the group in the module
     group { $group:
@@ -72,8 +106,8 @@ class bitbucket::install(
       staging::file { $file:
         source  => "${download_url}/${file}",
         timeout => 1800,
-      } ->
-      staging::extract { $file:
+      }
+      -> staging::extract { $file:
         target  => $webappdir,
         creates => $archive_dir,
         strip   => 1,
@@ -83,7 +117,7 @@ class bitbucket::install(
         before  => File[$homedir],
         require => [
           File[$installdir],
-          File[$webappdir] ],
+        File[$webappdir]],
       }
 
       if $manage_usr_grp {
@@ -91,7 +125,7 @@ class bitbucket::install(
       }
     }
     'archive': {
-      include '::archive'
+      include 'archive'
       $checksum_verify = $checksum ? { undef => false, default => true }
       archive { "/tmp/${file}":
         ensure          => present,
@@ -141,6 +175,4 @@ class bitbucket::install(
     User[$user] -> File[$homedir]
     User[$user] ~> Exec["chown_${webappdir}"]
   }
-
-
 }

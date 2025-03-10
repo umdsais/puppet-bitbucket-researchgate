@@ -1,31 +1,72 @@
-
 # == Class: bitbucket::backup
 #
 # This installs the bitbucket backup client
 #
-class bitbucket::backup(
-  $manage_backup        = $bitbucket::manage_backup,
-  $ensure               = $bitbucket::backup_ensure,
-  $schedule_weekday     = $bitbucket::backup_schedule_day,
-  $schedule_hour        = $bitbucket::backup_schedule_hour,
-  $schedule_minute      = $bitbucket::backup_schedule_minute,
-  $backup_base_url      = $bitbucket::backup_base_url,
-  $backupuser           = $bitbucket::backupuser,
-  $backuppass           = $bitbucket::backuppass,
-  $version              = $bitbucket::backupclient_version,
-  $product              = $bitbucket::product,
-  $backup_format        = $bitbucket::backup_format,
-  $homedir              = $bitbucket::homedir,
-  $user                 = $bitbucket::user,
-  $group                = $bitbucket::group,
-  $deploy_module        = $bitbucket::deploy_module,
-  $download_url         = $bitbucket::backupclient_url,
-  $backup_home          = $bitbucket::backup_home,
-  $javahome             = $bitbucket::javahome,
-  $keep_age             = $bitbucket::backup_keep_age,
-  $manage_usr_grp       = $bitbucket::manage_usr_grp,
-  ) {
-
+# === Parameters
+#
+# @param manage_backup
+#   Whether to manage the backup
+# @param ensure
+#   The state of the backup (present/absent)
+# @param schedule_weekday
+#   Day of the week to run backup
+# @param schedule_hour
+#   Hour to run backup
+# @param schedule_minute
+#   Minute to run backup
+# @param backup_base_url
+#   Base URL for backup
+# @param backupuser
+#   Username for backup
+# @param backuppass
+#   Password for backup
+# @param version
+#   Version of backup client
+# @param product
+#   Product name
+# @param backup_format
+#   Format of backup file
+# @param homedir
+#   Home directory path
+# @param user
+#   System user
+# @param group
+#   System group
+# @param deploy_module
+#   Module to use for deployment
+# @param download_url
+#   URL to download backup client
+# @param backup_home
+#   Backup home directory
+# @param javahome
+#   Java home directory
+# @param keep_age
+#   How long to keep backups
+# @param manage_usr_grp
+#   Whether to manage user/group
+#
+class bitbucket::backup (
+  Boolean $manage_backup                  = $bitbucket::manage_backup,
+  String $ensure                         = $bitbucket::backup_ensure,
+  Variant[Integer,String] $schedule_weekday = $bitbucket::backup_schedule_day,
+  Variant[Integer,String] $schedule_hour = $bitbucket::backup_schedule_hour,
+  Variant[Integer,String] $schedule_minute = $bitbucket::backup_schedule_minute,
+  String $backup_base_url                = $bitbucket::backup_base_url,
+  String $backupuser                     = $bitbucket::backupuser,
+  String $backuppass                     = $bitbucket::backuppass,
+  String $version                        = $bitbucket::backupclient_version,
+  String $product                        = $bitbucket::product,
+  String $backup_format                  = $bitbucket::backup_format,
+  Stdlib::Absolutepath $homedir          = $bitbucket::homedir,
+  String $user                           = $bitbucket::user,
+  String $group                          = $bitbucket::group,
+  String $deploy_module                  = $bitbucket::deploy_module,
+  Optional[String] $download_url         = $bitbucket::backupclient_url,
+  String $backup_home                   = $bitbucket::backup_home,
+  Optional[Stdlib::Absolutepath] $javahome         = $bitbucket::javahome,
+  String $keep_age                       = $bitbucket::backup_keep_age,
+  Boolean $manage_usr_grp                = $bitbucket::manage_usr_grp,
+) {
   if $manage_backup {
     $appdir = "${backup_home}/${product}-backup-client-${version}"
 
@@ -58,8 +99,8 @@ class bitbucket::backup(
         staging::file { $file:
           source  => "${download_url}/${version}/${file}",
           timeout => 1800,
-        } ->
-        staging::extract { $file:
+        }
+        -> staging::extract { $file:
           target  => $appdir,
           creates => "${appdir}/lib",
           strip   => 1,
@@ -98,10 +139,28 @@ class bitbucket::backup(
 
     # Enable Cronjob
     if $bitbucket::tomcat_ssl {
-        $backup_cmd = "${java_bin} -Djavax.net.ssl.trustStore=${homedir}/shared/config/ssl-keystore -Dbitbucket.password='${backuppass}' -Dbitbucket.user='${backupuser}' -Dbitbucket.baseUrl='${backup_base_url}' -Dbitbucket.home=${homedir} -Dbackup.home=${backup_home}/archives -jar ${appdir}/bitbucket-backup-client.jar"
+      $ssl_args = "-Djavax.net.ssl.trustStore=${homedir}/shared/config/ssl-keystore"
+      $backup_cmd = join([
+        $java_bin,
+        $ssl_args,
+        "-Dbitbucket.password='${backuppass}'",
+        "-Dbitbucket.user='${backupuser}'",
+        "-Dbitbucket.baseUrl='${backup_base_url}'",
+        "-Dbitbucket.home=${homedir}",
+        "-Dbackup.home=${backup_home}/archives",
+        "-jar ${appdir}/bitbucket-backup-client.jar"
+      ], ' ')
     }
     else {
-        $backup_cmd = "${java_bin} -Dbitbucket.password='${backuppass}' -Dbitbucket.user='${backupuser}' -Dbitbucket.baseUrl='${backup_base_url}' -Dbitbucket.home=${homedir} -Dbackup.home=${backup_home}/archives -jar ${appdir}/bitbucket-backup-client.jar"
+      $backup_cmd = join([
+        $java_bin,
+        "-Dbitbucket.password='${backuppass}'",
+        "-Dbitbucket.user='${backupuser}'",
+        "-Dbitbucket.baseUrl='${backup_base_url}'",
+        "-Dbitbucket.home=${homedir}",
+        "-Dbackup.home=${backup_home}/archives",
+        "-jar ${appdir}/bitbucket-backup-client.jar"
+      ], ' ')
     }
 
     cron { 'Backup Bitbucket':
@@ -121,5 +180,4 @@ class bitbucket::backup(
       recurse => 2,
     }
   }
-
 }

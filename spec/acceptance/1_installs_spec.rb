@@ -4,21 +4,21 @@ require 'spec_helper_acceptance'
 # Set environment variable download_url to use local webserver
 # export download_url = 'http://10.0.0.XXX/'
 download_url = ENV['download_url'] if ENV['download_url']
-if ENV['download_url']
-  download_url = ENV['download_url']
-else
-  download_url = 'undef'
-end
-if download_url == 'undef'
-  java_url = "'http://download.oracle.com/otn-pub/java/jdk/8u45-b14/'"
-else
-  java_url = download_url
-end
+download_url = if ENV['download_url']
+                 ENV['download_url']
+               else
+                 'undef'
+               end
+java_url = if download_url == 'undef'
+             "'http://download.oracle.com/otn-pub/java/jdk/8u45-b14/'"
+           else
+             download_url
+           end
 
 # We add the sleeps everywhere to give bitbucket enough
 # time to install/upgrade/run migration tasks/start
 
-describe 'bitbucket', :unless => UNSUPPORTED_PLATFORMS.include?(fact('osfamily')) do
+describe 'bitbucket', unless: UNSUPPORTED_PLATFORMS.include?(fact('osfamily')) do
   it 'installs with defaults and context /bitbucket1' do
     pp = <<-EOS
       $jh = $osfamily ? {
@@ -56,17 +56,17 @@ describe 'bitbucket', :unless => UNSUPPORTED_PLATFORMS.include?(fact('osfamily')
       }
       include ::bitbucket::facts
     EOS
-    apply_manifest(pp, :catch_failures => true)
+    apply_manifest(pp, catch_failures: true)
     sleep 180
     shell 'wget -q --tries=20 --retry-connrefused --read-timeout=10 localhost:7990/bitbucket1'
-    apply_manifest(pp, :catch_failures => true)
+    apply_manifest(pp, catch_failures: true)
     sleep 180
-    shell 'wget -q --tries=20 --retry-connrefused --read-timeout=10 localhost:7990/bitbucket1', :acceptable_exit_codes => [0]
-    apply_manifest(pp, :catch_changes => true)
+    shell 'wget -q --tries=20 --retry-connrefused --read-timeout=10 localhost:7990/bitbucket1', acceptable_exit_codes: [0]
+    apply_manifest(pp, catch_changes: true)
   end
 
   describe process('java') do
-    it { should be_running }
+    it { is_expected.to be_running }
   end
 
   describe port(7990) do
@@ -74,33 +74,33 @@ describe 'bitbucket', :unless => UNSUPPORTED_PLATFORMS.include?(fact('osfamily')
   end
 
   describe package('git') do
-    it { should be_installed }
+    it { is_expected.to be_installed }
   end
 
   describe service('bitbucket') do
-    it { should be_enabled }
+    it { is_expected.to be_enabled }
   end
 
   describe user('atlbitbucket') do
-    it { should exist }
-    it { should belong_to_group 'atlbitbucket' }
-    it { should have_login_shell '/bin/bash' }
+    it { is_expected.to exist }
+    it { is_expected.to belong_to_group 'atlbitbucket' }
+    it { is_expected.to have_login_shell '/bin/bash' }
   end
 
   describe command('curl http://localhost:7990/bitbucket1/setup') do
-    its(:stdout) { should match(/This is the base URL of this installation of Bitbucket/) }
+    its(:stdout) { is_expected.to match(%r{This is the base URL of this installation of Bitbucket}) }
   end
 
   describe command('facter -p bitbucket_version') do
-    its(:stdout) { should match(/3\.9\.2/) }
+    its(:stdout) { is_expected.to match(%r{3\.9\.2}) }
   end
 
   describe cron do
-    it { should have_entry('0 5 * * * /opt/java/bin/java -Dbitbucket.password="password" -Dbitbucket.user="admin" -Dbitbucket.baseUrl="http://localhost:7990" -Dbitbucket.home=/home/bitbucket -Dbackup.home=/opt/bitbucket-backup/archives -jar /opt/bitbucket-backup/bitbucket-backup-client-3.2.0/bitbucket-backup-client.jar').with_user('bitbucket') }
+    it { is_expected.to have_entry('0 5 * * * /opt/java/bin/java -Dbitbucket.password="password" -Dbitbucket.user="admin" -Dbitbucket.baseUrl="http://localhost:7990" -Dbitbucket.home=/home/bitbucket -Dbackup.home=/opt/bitbucket-backup/archives -jar /opt/bitbucket-backup/bitbucket-backup-client-3.2.0/bitbucket-backup-client.jar').with_user('bitbucket') }
   end
 
   describe file('/opt/bitbucket-backup/bitbucket-backup-client-3.2.0/bitbucket-backup-client.jar') do
-    it { should be_file }
-    it { should be_owned_by 'bitbucket' }
+    it { is_expected.to be_file }
+    it { is_expected.to be_owned_by 'bitbucket' }
   end
 end

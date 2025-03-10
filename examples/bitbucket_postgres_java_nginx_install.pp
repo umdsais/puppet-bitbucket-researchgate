@@ -1,35 +1,35 @@
 node default {
-  class { '::nginx': } ->
-  class { '::postgresql::globals':
+  class { 'nginx': }
+  -> class { 'postgresql::globals':
     manage_package_repo => true,
     version             => '9.6',
-  }->
-  class { '::postgresql::server': } ->
-  deploy::file { 'jdk-8u161-linux-x64.tar.gz':
+  }
+  -> class { 'postgresql::server': }
+  -> deploy::file { 'jdk-8u161-linux-x64.tar.gz':
     target          => '/opt/java',
     fetch_options   => '-q -c --header "Cookie: oraclelicense=accept-securebackup-cookie"',
     url             => 'http://download.oracle.com/otn-pub/java/jdk/8u161-b14/',
     download_timout => 1800,
     strip           => true,
-  } ->
-  class { '::bitbucket':
+  }
+  -> class { 'bitbucket':
     version  => '5.10.0',
     javahome => '/opt/java',
     proxy    => {
       scheme    => 'http',
-      proxyName => $::ipaddress_eth1,
+      proxyName => $facts['networking']['interfaces']['eth1']['ip'],
       proxyPort => '80',
     },
   }
-  class { '::bitbucket::gc': }
-  class { '::bitbucket::facts': }
+  class { 'bitbucket::gc': }
+  class { 'bitbucket::facts': }
   nginx::resource::upstream { 'bitbucket':
     ensure  => present,
-    members => [ 'localhost:7990' ],
+    members => ['localhost:7990'],
   }
-  nginx::resource::vhost { $::ipaddress_eth1:
+  nginx::resource::vhost { $facts['networking']['interfaces']['eth1']['ip']:
     ensure               => present,
-    server_name          => [ $::ipaddress_eth1, $::fqdn, $hostname ],
+    server_name          => [$facts['networking']['interfaces']['eth1']['ip'], $facts['networking']['fqdn'], $hostname],
     listen_port          => '80',
     proxy                => 'http://bitbucket',
     proxy_read_timeout   => '300',
