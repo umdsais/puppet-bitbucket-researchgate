@@ -77,21 +77,16 @@ describe 'bitbucket' do
                 uid: 333,
                 gid: 444,
                 download_url: 'http://downloads.atlassian.com',
-                deploy_module: 'staging',
               }
             end
 
             it do
-              is_expected.to contain_staging__file("atlassian-bitbucket-#{BITBUCKET_VERSION}.tar.gz")
-                .with('source' => "http://downloads.atlassian.com/atlassian-bitbucket-#{BITBUCKET_VERSION}.tar.gz")
-              is_expected.to contain_staging__extract("atlassian-bitbucket-#{BITBUCKET_VERSION}.tar.gz")
-                .with('target'  => "/custom/bitbucket/atlassian-bitbucket-#{BITBUCKET_VERSION}",
-                      'user'    => 'foo',
-                      'group'   => 'bar',
+              is_expected.to contain_archive("/tmp/atlassian-bitbucket-#{BITBUCKET_VERSION}.tar.gz")
+                .with('source' => "http://downloads.atlassian.com/atlassian-bitbucket-#{BITBUCKET_VERSION}.tar.gz",
+                      'extract_path' => '/custom/bitbucket',
+                      'user' => 'foo',
+                      'group' => 'bar',
                       'creates' => "/custom/bitbucket/atlassian-bitbucket-#{BITBUCKET_VERSION}/conf")
-                .that_comes_before('File[/random/homedir]')
-                .that_requires('File[/custom/bitbucket]')
-                .that_notifies("Exec[chown_/custom/bitbucket/atlassian-bitbucket-#{BITBUCKET_VERSION}]")
             end
 
             it do

@@ -2,8 +2,6 @@
 #
 # This installs the bitbucket backup client
 #
-# === Parameters
-#
 # @param manage_backup
 #   Whether to manage the backup
 # @param ensure
@@ -32,8 +30,6 @@
 #   System user
 # @param group
 #   System group
-# @param deploy_module
-#   Module to use for deployment
 # @param download_url
 #   URL to download backup client
 # @param backup_home
@@ -60,7 +56,6 @@ class bitbucket::backup (
   Stdlib::Absolutepath $homedir          = $bitbucket::homedir,
   String $user                           = $bitbucket::user,
   String $group                          = $bitbucket::group,
-  String $deploy_module                  = $bitbucket::deploy_module,
   Optional[String] $download_url         = $bitbucket::backupclient_url,
   String $backup_home                   = $bitbucket::backup_home,
   Optional[Stdlib::Absolutepath] $javahome         = $bitbucket::javahome,
@@ -93,42 +88,16 @@ class bitbucket::backup (
       content => "${download_url}/${version}/${file}",
     }
 
-    case $deploy_module {
-      'staging': {
-        require staging
-        staging::file { $file:
-          source  => "${download_url}/${version}/${file}",
-          timeout => 1800,
-        }
-        -> staging::extract { $file:
-          target  => $appdir,
-          creates => "${appdir}/lib",
-          strip   => 1,
-          user    => $user,
-          group   => $group,
-          require => File[$appdir],
-        }
-
-        if $manage_usr_grp {
-          User[$user] -> Staging::Extract[$file]
-        }
-      }
-      'archive': {
-        archive { "/tmp/${file}":
-          ensure       => present,
-          extract      => true,
-          extract_path => $backup_home,
-          source       => "${download_url}/${version}/${file}",
-          user         => $user,
-          group        => $group,
-          creates      => "${appdir}/lib",
-          cleanup      => true,
-          before       => File[$appdir],
-        }
-      }
-      default: {
-        fail('deploy_module parameter must equal "archive" or staging""')
-      }
+    archive { "/tmp/${file}":
+      ensure       => present,
+      extract      => true,
+      extract_path => $backup_home,
+      source       => "${download_url}/${version}/${file}",
+      user         => $user,
+      group        => $group,
+      creates      => "${appdir}/lib",
+      cleanup      => true,
+      before       => File[$appdir],
     }
 
     if $javahome {
@@ -139,28 +108,10 @@ class bitbucket::backup (
 
     # Enable Cronjob
     if $bitbucket::tomcat_ssl {
-      $ssl_args = "-Djavax.net.ssl.trustStore=${homedir}/shared/config/ssl-keystore"
-      $backup_cmd = join([
-        $java_bin,
-        $ssl_args,
-        "-Dbitbucket.password='${backuppass}'",
-        "-Dbitbucket.user='${backupuser}'",
-        "-Dbitbucket.baseUrl='${backup_base_url}'",
-        "-Dbitbucket.home=${homedir}",
-        "-Dbackup.home=${backup_home}/archives",
-        "-jar ${appdir}/bitbucket-backup-client.jar"
-      ], ' ')
+      $backup_cmd = "${java_bin} -Djavax.net.ssl.trustStore=${homedir}/shared/config/ssl-keystore -Dbitbucket.password='${backuppass}' -Dbitbucket.user='${backupuser}' -Dbitbucket.baseUrl='${backup_base_url}' -Dbitbucket.home=${homedir} -Dbackup.home=${backup_home}/archives -jar ${appdir}/bitbucket-backup-client.jar"
     }
     else {
-      $backup_cmd = join([
-        $java_bin,
-        "-Dbitbucket.password='${backuppass}'",
-        "-Dbitbucket.user='${backupuser}'",
-        "-Dbitbucket.baseUrl='${backup_base_url}'",
-        "-Dbitbucket.home=${homedir}",
-        "-Dbackup.home=${backup_home}/archives",
-        "-jar ${appdir}/bitbucket-backup-client.jar"
-      ], ' ')
+      $backup_cmd = "${java_bin} -Dbitbucket.password='${backuppass}' -Dbitbucket.user='${backupuser}' -Dbitbucket.baseUrl='${backup_base_url}' -Dbitbucket.home=${homedir} -Dbackup.home=${backup_home}/archives -jar ${appdir}/bitbucket-backup-client.jar"
     }
 
     cron { 'Backup Bitbucket':

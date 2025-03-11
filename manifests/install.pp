@@ -2,39 +2,35 @@
 #
 # This installs the bitbucket module
 #
-# === Parameters
-#
-# [*version*]
+# @param version
 #   Bitbucket version to install
-# [*product*]
+# @param product
 #   Product name (bitbucket)
-# [*format*]
+# @param format
 #   Installation archive format
-# [*installdir*]
+# @param installdir
 #   Installation directory path
-# [*homedir*]
+# @param homedir
 #   Home directory path
-# [*logdir*]
+# @param logdir
 #   Log directory path
-# [*manage_usr_grp*]
+# @param manage_usr_grp
 #   Whether to manage user/group
-# [*user*]
+# @param user
 #   Service user
-# [*group*]
+# @param group
 #   Service group
-# [*uid*]
+# @param uid
 #   User ID
-# [*gid*]
+# @param gid
 #   Group ID
-# [*download_url*]
+# @param download_url
 #   Product download URL
-# [*deploy_module*]
-#   Module to use for deployment
-# [*dburl*]
+# @param dburl
 #   Database URL
-# [*checksum*]
+# @param checksum
 #   Download file checksum
-# [*webappdir*]
+# @param webappdir
 #   Web application directory
 #
 class bitbucket::install (
@@ -51,7 +47,6 @@ class bitbucket::install (
   Optional[Integer] $uid                 = $bitbucket::uid,
   Optional[Integer] $gid                 = $bitbucket::gid,
   Optional[String] $download_url         = $bitbucket::download_url,
-  String $deploy_module                  = $bitbucket::deploy_module,
   String $dburl                          = $bitbucket::dburl,
   Optional[String] $checksum             = $bitbucket::checksum,
 ) {
@@ -83,7 +78,7 @@ class bitbucket::install (
     }
   }
 
-  # Deploy files using either staging or deploy modules.
+  # Download archive tarball
   $file = "atlassian-${product}-${version}.${format}"
 
   if ! defined(File[$webappdir]) {
@@ -100,56 +95,26 @@ class bitbucket::install (
     $archive_dir = "${webappdir}/conf"
   }
 
-  case $deploy_module {
-    'staging': {
-      require staging
-      staging::file { $file:
-        source  => "${download_url}/${file}",
-        timeout => 1800,
-      }
-      -> staging::extract { $file:
-        target  => $webappdir,
-        creates => $archive_dir,
-        strip   => 1,
-        user    => $user,
-        group   => $group,
-        notify  => Exec["chown_${webappdir}"],
-        before  => File[$homedir],
-        require => [
-          File[$installdir],
-        File[$webappdir]],
-      }
+  include 'archive'
+  $checksum_verify = $checksum ? { undef => false, default => true }
+  archive { "/tmp/${file}":
+    ensure          => present,
+    extract         => true,
+    extract_path    => $installdir,
+    source          => "${download_url}/${file}",
+    creates         => $archive_dir,
+    cleanup         => true,
+    checksum_type   => 'md5',
+    checksum        => $checksum,
+    checksum_verify => $checksum_verify,
+    user            => $user,
+    group           => $group,
+    before          => File[$webappdir],
+    require         => File[$installdir],
+  }
 
-      if $manage_usr_grp {
-        User[$user] -> Staging::Extract[$file]
-      }
-    }
-    'archive': {
-      include 'archive'
-      $checksum_verify = $checksum ? { undef => false, default => true }
-      archive { "/tmp/${file}":
-        ensure          => present,
-        extract         => true,
-        extract_path    => $installdir,
-        source          => "${download_url}/${file}",
-        creates         => $archive_dir,
-        cleanup         => true,
-        checksum_type   => 'md5',
-        checksum        => $checksum,
-        checksum_verify => $checksum_verify,
-        user            => $user,
-        group           => $group,
-        before          => File[$webappdir],
-        require         => File[$installdir],
-      }
-
-      if $manage_usr_grp {
-        User[$user] -> Archive["/tmp/${file}"]
-      }
-    }
-    default: {
-      fail('deploy_module parameter must equal "archive" or staging""')
-    }
+  if $manage_usr_grp {
+    User[$user] -> Archive["/tmp/${file}"]
   }
 
   file { $homedir:

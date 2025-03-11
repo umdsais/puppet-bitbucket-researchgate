@@ -3,12 +3,6 @@ fixtures:
     archive: 'puppet-archive'
     cron_core: 'puppetlabs-cron_core'
     inifile: 'puppetlabs-inifile'
-    staging: 'puppet-staging'
-    stdlib:
-      repo: 'puppetlabs-stdlib'
-      ref: '6.6.0'
+    stdlib: 'puppetlabs-stdlib'
   symlinks:
     bitbucket: "#{source_dir}"
-  repositories:
-    #repoforge: "http://github.com/Mylezeem/puppet-repoforge.git"
-    #mysql_java_connector: "http://github.com/puppet-community/puppet-mysql_java_connector"

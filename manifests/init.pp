@@ -2,158 +2,154 @@
 #
 # This modules installs Atlassian bitbucket.
 #
-# === Parameters
-#
 # JVM Settings:
-# [*javahome*]
+# @param javahome
 #   Java installation directory
-# [*jvm_xms*]
+# @param jvm_xms
 #   Initial JVM heap size
-# [*jvm_xmx*]
+# @param jvm_xmx
 #   Maximum JVM heap size
-# [*jvm_permgen*]
+# @param jvm_permgen
 #   PermGen memory size
-# [*jvm_optional*]
+# @param jvm_optional
 #   Additional JVM options
-# [*jvm_support_recommended_args*]
+# @param jvm_support_recommended_args
 #   Recommended JVM arguments
-# [*java_opts*]
+# @param java_opts
 #   Additional java options
-# [*umask*]
+# @param umask
 #   Process umask
-# [*additional_env*]
+# @param additional_env
 #   Additional environment variables
 #
 # Bitbucket Settings:
-# [*version*]
+# @param version
 #   Bitbucket version to install
-# [*product*]
+# @param product
 #   Product name (bitbucket)
-# [*format*]
+# @param format
 #   Installation archive format
-# [*installdir*]
+# @param installdir
 #   Installation directory
-# [*homedir*]
+# @param homedir
 #   Home directory
-# [*context_path*]
+# @param context_path
 #   Context path for web interface
-# [*tomcat_port*]
+# @param tomcat_port
 #   Port for web interface
-# [*tomcat_ssl*]
+# @param tomcat_ssl
 #   Enable SSL support
-# [*logdir*]
+# @param logdir
 #   Log directory location
-# [*log_maxhistory*]
+# @param log_maxhistory
 #   Days to keep logs
-# [*log_maxsize*]
+# @param log_maxsize
 #   Maximum log size
 #
 # User/Group Settings:
-# [*manage_usr_grp*]
+# @param manage_usr_grp
 #   Whether to manage user/group
-# [*user*]
+# @param user
 #   Service user
-# [*group*]
+# @param group
 #   Service group
-# [*uid*]
+# @param uid
 #   User ID
-# [*gid*]
+# @param gid
 #   Group ID
 #
 # Database Settings:
-# [*dbuser*]
+# @param dbuser
 #   Database user
-# [*dbpassword*]
+# @param dbpassword
 #   Database password
-# [*dburl*]
+# @param dburl
 #   Database URL
-# [*dbdriver*]
+# @param dbdriver
 #   Database driver
 #
 # Data Center Settings:
-# [*hazelcast_network*]
+# @param hazelcast_network
 #   Hazelcast network address
-# [*hazelcast_group_name*]
+# @param hazelcast_group_name
 #   Hazelcast group name
-# [*hazelcast_group_password*]
+# @param hazelcast_group_password
 #   Hazelcast group password
-# [*elasticsearch_baseurl*]
+# @param elasticsearch_baseurl
 #   Elasticsearch base URL
-# [*elasticsearch_username*]
+# @param elasticsearch_username
 #   Elasticsearch username
-# [*elasticsearch_password*]
+# @param elasticsearch_password
 #   Elasticsearch password
 #
 # Backup Settings:
-# [*manage_backup*]
+# @param manage_backup
 #   Whether to manage backup
-# [*backup_ensure*]
+# @param backup_ensure
 #   Backup presence (present/absent)
-# [*backupclient_url*]
+# @param backupclient_url
 #   Backup client download URL
-# [*backup_format*]
+# @param backup_format
 #   Backup archive format
-# [*backupclient_version*]
+# @param backupclient_version
 #   Backup client version
-# [*backup_home*]
+# @param backup_home
 #   Backup home directory
-# [*backupuser*]
+# @param backupuser
 #   Backup user
-# [*backuppass*]
+# @param backuppass
 #   Backup password
-# [*backup_schedule_day*]
+# @param backup_schedule_day
 #   Backup schedule day
-# [*backup_schedule_hour*]
+# @param backup_schedule_hour
 #   Backup schedule hour
-# [*backup_schedule_minute*]
+# @param backup_schedule_minute
 #   Backup schedule minute
-# [*backup_keep_age*]
+# @param backup_keep_age
 #   Backup retention period
 #
 # Service Settings:
-# [*service_manage*]
+# @param service_manage
 #   Whether to manage service
-# [*service_ensure*]
+# @param service_ensure
 #   Service state (running/stopped)
-# [*service_enable*]
+# @param service_enable
 #   Enable service at boot
-# [*service_options*]
+# @param service_options
 #   Additional service options
 #
 # Initialization Settings:
-# [*display_name*]
+# @param display_name
 #   Display name for the Bitbucket instance
-# [*base_url*]
+# @param base_url
 #   Base URL where Bitbucket will be accessible
-# [*license*]
+# @param license
 #   Bitbucket license key
-# [*sysadmin_username*]
+# @param sysadmin_username
 #   Admin username for initial setup
-# [*sysadmin_password*]
+# @param sysadmin_password
 #   Admin password for initial setup
-# [*sysadmin_name*]
+# @param sysadmin_name
 #   Admin display name
-# [*sysadmin_email*]
+# @param sysadmin_email
 #   Admin email address
-# [*config_properties*]
+# @param config_properties
 #   Hash of additional configuration properties
 #
 # Installation Settings:
-# [*download_url*]
+# @param download_url
 #   URL to download Bitbucket package
-# [*checksum*]
+# @param checksum
 #   MD5 checksum of the package
-# [*backup_base_url*]
+# @param backup_base_url
 #   Base URL for backup location
-# [*backup_keystore*]
+# @param backup_keystore
 #   Path to SSL keystore for backups
-# [*proxy*]
+# @param proxy
 #   Hash of proxy server settings
-# [*stop_bitbucket*]
+# @param stop_bitbucket
 #   Command to stop Bitbucket service
-# [*deploy_module*]
-#   Module to use for deployment (archive/staging)
-# [*application_tunnel_allowed*]
+# @param application_tunnel_allowed
 #   Whether to enable application tunneling
 #
 class bitbucket (
@@ -242,13 +238,8 @@ class bitbucket (
   # Reverse https proxy
   Hash $proxy                             = {},
 
-  # Command to stop bitbucket in preparation to updgrade. # This is configurable
-  # incase the bitbucket service is managed outside of puppet. eg: using the
-  # puppetlabs-corosync module: 'crm resource stop bitbucket && sleep 15'
+  # Command to stop bitbucket in preparation to updgrade.
   String $stop_bitbucket                  = 'service bitbucket stop && sleep 15',
-
-  # Choose whether to use nanliu-staging, or puppet-archive
-  String $deploy_module                    = 'archive',
 
   # Chose whether options for application tunnel should be enabled
   Boolean $application_tunnel_allowed      = false,
