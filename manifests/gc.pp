@@ -2,32 +2,33 @@
 #
 # Class to run git gc on bitbucket repo's at regular intervals
 #
-# === Parameters
+# @param ensure
+#   Enable or disable cron job to run git garbage collection (present/absent)
+# @param path
+#   Path where git gc script will be installed
+# @param minute
+#   Minute when the cron job will run
+# @param hour
+#   Hour when the cron job will run
+# @param weekday
+#   Day of the week when the cron job will run
+# @param user
+#   User that will run the git gc command
+# @param homedir
+#   Home directory path where repositories are stored
 #
-# [*ensure*]
-#   enable or disable cron job to run git garabage collection.
-# [*path*]
-#   Default path to install script to.
-# [*weekday*]
-#   Day of the week to run script on, default is Sunday at midnight.
-#
-# === Examples
-#
-# class { 'bitbucket::gc': }
-#
-class bitbucket::gc(
-  $ensure  = 'present',
-  $path    = '/usr/local/bin/git-gc.sh',
-  $minute  = 0,
-  $hour    = 0,
-  $weekday = 'Sunday',
-  $user    = $bitbucket::user,
-  $homedir = $bitbucket::homedir,
-  ) {
+class bitbucket::gc (
+  String $ensure                         = 'present',
+  Stdlib::Absolutepath $path             = '/usr/local/bin/git-gc.sh',
+  Variant[Integer,String] $minute        = 0,
+  Variant[Integer,String] $hour          = 0,
+  Variant[Integer,String] $weekday       = 'Sunday',
+  String $user                           = $bitbucket::user,
+  Stdlib::Absolutepath $homedir          = $bitbucket::homedir,
+) {
+  include bitbucket::params
 
-  include ::bitbucket::params
-
-  if $::bitbucket_version and versioncmp($::bitbucket_version, '3.2') < 0 {
+  if $facts['bitbucket_version'] and versioncmp($facts['bitbucket_version'], '3.2') < 0 {
     $shared = ''
   } else {
     $shared = '/shared'
@@ -37,9 +38,9 @@ class bitbucket::gc(
     ensure  => $ensure,
     content => template('bitbucket/git-gc.sh.erb'),
     mode    => '0755',
-  } ->
+  }
 
-  cron { 'git-gc-bitbucket':
+  -> cron { 'git-gc-bitbucket':
     ensure  => $ensure,
     command => "${path} &>/dev/null",
     user    => $user,
@@ -47,5 +48,4 @@ class bitbucket::gc(
     hour    => $hour,
     weekday => $weekday,
   }
-
 }

@@ -1,26 +1,55 @@
 # == Class: bitbucket::install
 #
-# This installs the bitbucket module. See README.md for details
+# This installs the bitbucket module
 #
-class bitbucket::install(
-  $version        = $bitbucket::version,
-  $product        = $bitbucket::product,
-  $format         = $bitbucket::format,
-  $installdir     = $bitbucket::installdir,
-  $homedir        = $bitbucket::homedir,
-  $logdir         = $bitbucket::logdir,
-  $manage_usr_grp = $bitbucket::manage_usr_grp,
-  $user           = $bitbucket::user,
-  $group          = $bitbucket::group,
-  $uid            = $bitbucket::uid,
-  $gid            = $bitbucket::gid,
-  $download_url   = $bitbucket::download_url,
-  $deploy_module  = $bitbucket::deploy_module,
-  $dburl          = $bitbucket::dburl,
-  $checksum       = $bitbucket::checksum,
-  $webappdir,
-  ) {
-
+# @param version
+#   Bitbucket version to install
+# @param product
+#   Product name (bitbucket)
+# @param format
+#   Installation archive format
+# @param installdir
+#   Installation directory path
+# @param homedir
+#   Home directory path
+# @param logdir
+#   Log directory path
+# @param manage_usr_grp
+#   Whether to manage user/group
+# @param user
+#   Service user
+# @param group
+#   Service group
+# @param uid
+#   User ID
+# @param gid
+#   Group ID
+# @param download_url
+#   Product download URL
+# @param dburl
+#   Database URL
+# @param checksum
+#   Download file checksum
+# @param webappdir
+#   Web application directory
+#
+class bitbucket::install (
+  String $webappdir            = $bitbucket::webappdir,
+  String $version                        = $bitbucket::version,
+  String $product                        = $bitbucket::product,
+  String $format                         = $bitbucket::format,
+  Stdlib::Absolutepath $installdir       = $bitbucket::installdir,
+  Stdlib::Absolutepath $homedir          = $bitbucket::homedir,
+  Stdlib::Absolutepath $logdir           = $bitbucket::logdir,
+  Boolean $manage_usr_grp                = $bitbucket::manage_usr_grp,
+  String $user                           = $bitbucket::user,
+  String $group                          = $bitbucket::group,
+  Optional[Integer] $uid                 = $bitbucket::uid,
+  Optional[Integer] $gid                 = $bitbucket::gid,
+  Optional[String] $download_url         = $bitbucket::download_url,
+  String $dburl                          = $bitbucket::dburl,
+  Optional[String] $checksum             = $bitbucket::checksum,
+) {
   if $manage_usr_grp {
     #Manage the group in the module
     group { $group:
@@ -49,7 +78,7 @@ class bitbucket::install(
     }
   }
 
-  # Deploy files using either staging or deploy modules.
+  # Download archive tarball
   $file = "atlassian-${product}-${version}.${format}"
 
   if ! defined(File[$webappdir]) {
@@ -66,56 +95,26 @@ class bitbucket::install(
     $archive_dir = "${webappdir}/conf"
   }
 
-  case $deploy_module {
-    'staging': {
-      require staging
-      staging::file { $file:
-        source  => "${download_url}/${file}",
-        timeout => 1800,
-      } ->
-      staging::extract { $file:
-        target  => $webappdir,
-        creates => $archive_dir,
-        strip   => 1,
-        user    => $user,
-        group   => $group,
-        notify  => Exec["chown_${webappdir}"],
-        before  => File[$homedir],
-        require => [
-          File[$installdir],
-          File[$webappdir] ],
-      }
+  include 'archive'
+  $checksum_verify = $checksum ? { undef => false, default => true }
+  archive { "/tmp/${file}":
+    ensure          => present,
+    extract         => true,
+    extract_path    => $installdir,
+    source          => "${download_url}/${file}",
+    creates         => $archive_dir,
+    cleanup         => true,
+    checksum_type   => 'md5',
+    checksum        => $checksum,
+    checksum_verify => $checksum_verify,
+    user            => $user,
+    group           => $group,
+    before          => File[$webappdir],
+    require         => File[$installdir],
+  }
 
-      if $manage_usr_grp {
-        User[$user] -> Staging::Extract[$file]
-      }
-    }
-    'archive': {
-      include '::archive'
-      $checksum_verify = $checksum ? { undef => false, default => true }
-      archive { "/tmp/${file}":
-        ensure          => present,
-        extract         => true,
-        extract_path    => $installdir,
-        source          => "${download_url}/${file}",
-        creates         => $archive_dir,
-        cleanup         => true,
-        checksum_type   => 'md5',
-        checksum        => $checksum,
-        checksum_verify => $checksum_verify,
-        user            => $user,
-        group           => $group,
-        before          => File[$webappdir],
-        require         => File[$installdir],
-      }
-
-      if $manage_usr_grp {
-        User[$user] -> Archive["/tmp/${file}"]
-      }
-    }
-    default: {
-      fail('deploy_module parameter must equal "archive" or staging""')
-    }
+  if $manage_usr_grp {
+    User[$user] -> Archive["/tmp/${file}"]
   }
 
   file { $homedir:
@@ -141,6 +140,4 @@ class bitbucket::install(
     User[$user] -> File[$homedir]
     User[$user] ~> Exec["chown_${webappdir}"]
   }
-
-
 }

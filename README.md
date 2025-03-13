@@ -77,10 +77,6 @@ Schedule a weekly git garbage collect for all repositories.
 ```puppet
   class { 'bitbucket::gc': }
 ```
-Enable external facts for bitbucket version.
-```puppet
-  class { 'bitbucket::facts': }
-```
 Enable a bitbucket backup
 ```puppet
   class { 'bitbucket':
@@ -108,7 +104,6 @@ Bitbucket can be upgraded by incrementing this version number. This will *STOP* 
     javahome => '/opt/java',
     version  => '7.2.2',
   }
-  class { 'bitbucket::facts': }
 ```
 If the bitbucket service is managed outside of puppet the stop_bitbucket paramater can be used to shut down bitbucket.
 ```puppet
@@ -117,7 +112,6 @@ If the bitbucket service is managed outside of puppet the stop_bitbucket paramat
     version    => '7.2.2',
     stop_bitbucket => 'crm resource stop bitbucket && sleep 15',
   }
-  class { 'bitbucket::facts': }
 ```
 
 ## Usage
@@ -148,7 +142,6 @@ This is especially useful for setting properties such as HTTP/https proxy settin
     },
     tomcat_port    => '7991'
   }
-  class { 'bitbucket::facts': }
   class { 'bitbucket::gc': }
 ```
 
@@ -191,7 +184,6 @@ bitbucket::bitbucket_stop: '/usr/sbin crm resource stop bitbucket'
 #### Public Classes
 
 * `bitbucket`: Main class, manages the installation and configuration of Bitbucket.
-* `bitbucket::facts`: Enable external facts for running instance of Bitbucket. This class is required to handle upgrades of Bitbucket. As it is an external fact, we chose not to enable it by default.
 * `bitbucket::gc`: Schedule a weekly git garbage collect for all repositories
 * `bitbucket::backup`: Schedule a backup of bitbucket
 

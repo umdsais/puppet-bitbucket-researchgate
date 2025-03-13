@@ -7,68 +7,54 @@
   "source": "https://github.com/danofthewired/puppet-bitbucket.git",
   "project_page": "https://github.com/danofthewired/puppet-bitbucket",
   "issues_url": "https://github.com/danofthewired/puppet-bitbucket/issues",
-  "description": "Module to install Atlassian Bitbucket Server/Data Center. On-premises source code management for Git that's secure, fast, and enterprise grade.",
+  "dependencies": [
+    {
+      "name": "puppetlabs/stdlib",
+      "version_requirement": ">= 6.6.0 < 10.0.0"
+    },
+    {
+      "name": "puppetlabs/inifile",
+      "version_requirement": ">= 1.0.0 < 2.0.0"
+    },
+    {
+      "name": "puppet/archive",
+      "version_requirement": ">= 6.0.0 < 7.0.0"
+    }
+  ],
   "operatingsystem_support": [
     {
       "operatingsystem": "RedHat",
       "operatingsystemrelease": [
-        "6",
         "7",
-	"8"
-      ]
-    },
-    {
-      "operatingsystem": "CentOS",
-      "operatingsystemrelease": [
-        "6",
-        "7"
+        "8",
+	"9"
       ]
     },
     {
       "operatingsystem": "Ubuntu",
       "operatingsystemrelease": [
-        "12.04",
-        "14.04",
-        "16.04",
-        "17.04",
-        "18.04"
+        "20.04",
+        "22.04",
+        "24.04"
       ]
     },
     {
       "operatingsystem": "Debian",
       "operatingsystemrelease": [
-        "7",
-        "8",
-        "9"  
+        "11",
+        "12"
       ]
     }
-  ],
-  "dependencies": [
-    {
-      "name": "puppetlabs/stdlib",
-      "version_requirement": ">= 4.0.0"
-    },
-    {
-      "name": "puppetlabs/inifile",
-      "version_requirement": ">= 1.0.0"
-    },
-    {
-      "name": "mkrakowitzer/deploy",
-      "version_requirement": ">= 0.0.3"
-    },
-    {
-      "name": "puppet/staging",
-      "version_requirement": ">= 1.0.0"
-    },
-    {
-      "name": "puppet/archive",
-      "version_requirement": ">= 0.4.4"
-    }
+
   ],
   "requirements": [
     {
       "name": "puppet",
-      "version_requirement": ">=5.5.10 < 7.0.0"
+      "version_requirement": ">=7.0.0 < 9.0.0"
     }
-  ]
+  ],
+  "description": "Module to install Atlassian Bitbucket Server/Data Center. On-premises source code management for Git that's secure, fast, and enterprise grade.",
+  "pdk-version": "3.0.1",
+  "template-url": "pdk-default#3.0.1",
+  "template-ref": "tags/3.0.1-0-gd13288a"
 }
