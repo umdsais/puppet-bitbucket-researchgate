@@ -135,7 +135,7 @@
                  compiled into Java code by Janino internally, doing so causes backslashes to be removed on Windows
                  and results in logback.xml not being included even if it is present. Calling property("home.dir")
                  returns the same value but does so in a way that is safe to be compiled. -->
-            <if condition='new java.io.File(property("home.dir"), "logback.xml").exists()'>
+            <if condition='java.nio.file.Files.exists(java.nio.file.FileSystems.getDefault().getPath(property("home.dir"), "logback.xml"))'>
                 <then>
                     <!-- Do not do the actual import here! Just set a property indicating we want to. That way,
                          logback.xml in the home directory can change logging levels set in _this_ logback.xml -->
