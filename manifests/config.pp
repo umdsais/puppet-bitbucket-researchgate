@@ -112,20 +112,40 @@ class bitbucket::config (
     ],
   }
 
-  if versioncmp($version, '7.21') >= 0 {
+  # Atlassian removed bundled local search from the install archive starting
+  # with Bitbucket 10.x. Data Center now requires an externally-provisioned
+  # remote OpenSearch server; there is no local opensearch/ directory in the
+  # 10.x tarball for us to manage a config file inside of.
+  # See: https://confluence.atlassian.com/bitbucketserver/install-and-configure-a-remote-opensearch-server
+  # and: https://confluence.atlassian.com/bitbucketserver/migrate-from-bundled-search-to-remote-opensearch
+  #
+  # Until remote OpenSearch is provisioned and this module is extended to
+  # manage the remote-search connection settings (bitbucket.properties), run
+  # 10.x nodes with bitbucket::service_options => '--no-search' in hiera.
+  if versioncmp($version, '10.0') >= 0 {
+    # No local search config file exists to manage on 10.x+.
+  } elsif versioncmp($version, '7.21') >= 0 {
     $search_config = "${bitbucket::webappdir}/opensearch/config/opensearch.yml"
     $search_config_template = 'bitbucket/opensearch.yml.erb'
+    file { $search_config:
+      content => template($search_config_template),
+      mode    => '0640',
+      require => [
+        Class['bitbucket::install'],
+        File[$bitbucket::webappdir],
+      ],
+    }
   } else {
     $search_config = "${bitbucket::webappdir}/elasticsearch/config-template/elasticsearch.yml"
     $search_config_template = 'bitbucket/elasticsearch.yml.erb'
-  }
-  file { $search_config:
-    content => template($search_config_template),
-    mode    => '0640',
-    require => [
-      Class['bitbucket::install'],
-      File[$bitbucket::webappdir],
-    ],
+    file { $search_config:
+      content => template($search_config_template),
+      mode    => '0640',
+      require => [
+        Class['bitbucket::install'],
+        File[$bitbucket::webappdir],
+      ],
+    }
   }
 
   file { "${bitbucket::webappdir}/app/WEB-INF/classes/logback.xml":
